@@ -1,40 +1,34 @@
 # TYKAIRO-AI — Free n8n Workflows
 
-A collection of three free automation templates by **TYKAIRO-AI**.
+A collection of three free automation workflow concepts by **TYKAIRO-AI**.
 
-> Preview images below are conceptual artwork, **not** screenshots of running n8n instances. Workflows require configuration and testing before production.
+> **Preview status:** These graphics are conceptual artwork, **not** screenshots of working n8n instances. Workflow JSON files and ZIP archives have **not yet been uploaded**. Do not treat the descriptions as verified production-ready features.
 
 ## Telegram AI Support Desk Pro
 
-![Telegram AI Support Desk Pro](https://tykairoai.wordpress.com/wp-content/uploads/2026/10/telegram-ai-support-desk-pro.png)
+![Telegram AI Support Desk Pro](assets/telegram-ai-support-desk-pro.png)
 
-Telegram customer support with FAQ-based routing, AI-assisted response handling and a human escalation path.
-
-[Product details and setup](https://tykairoai.wordpress.com/telegram-ai-support-desk-pro-2/)
+Telegram customer support concept with FAQ-based routing, AI-assisted response handling, and a human escalation path.
 
 ## Smart Lead Qualification Pro
 
-![Smart Lead Qualification Pro](https://tykairoai.wordpress.com/wp-content/uploads/2026/10/smart-lead-qualification-pro.png)
+![Smart Lead Qualification Pro](assets/smart-lead-qualification-pro.png)
 
-Webhook lead intake, field validation, configurable scoring and prioritization alerts.
-
-[Product details and setup](https://tykairoai.wordpress.com/smart-lead-qualification-pro-2/)
+Lead intake concept with field validation, configurable scoring, duplicate detection, and sales-team alerts.
 
 ## Website Change Radar Pro
 
-![Website Change Radar Pro](https://tykairoai.wordpress.com/wp-content/uploads/2026/10/website-change-radar-pro.png)
+![Website Change Radar Pro](assets/website-change-radar-pro.png)
 
-Scheduled web-page monitoring, content comparison and Telegram alerts for detected changes.
+Scheduled web-page monitoring concept with content comparison, change filtering, history logging, and Telegram alerts.
 
-[Product details and setup](https://tykairoai.wordpress.com/website-change-radar-pro-2/)
+## Setup — once the JSON files are available
 
-## Setup
+1. Download the workflow JSON and import it into n8n.
+2. Connect credentials, replace example URLs/chat IDs, and adjust configuration.
+3. Test every node and success/failure branch before activating it.
+4. Never commit secrets or private customer data to version control.
 
-1. Obtain a workflow JSON and import it into n8n.
-2. Connect credentials, replace example URLs/chat IDs and adjust configuration.
-3. Test each node and branch before activation.
-4. Keep secrets and private customer data out of version control.
+Visit [TYKAIRO-AI](https://tykairo-ai.github.io/) to learn more about the company.
 
-[Explore all workflows on TYKAIRO-AI](https://tykairoai.wordpress.com/work-flow-n8n/)
-
-**Repository status:** README and preview links published. Workflow JSON and ZIP archives must still be uploaded; do not treat this repository as a complete download until those assets are present.
+**Repository status:** Product previews and descriptions only. Workflow JSON, ZIP downloads, and real execution test reports still need to be published.
