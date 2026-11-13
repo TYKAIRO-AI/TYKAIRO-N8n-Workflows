@@ -1,0 +1,376 @@
+{
+  "name": "TYKAIRO AI - Invoice Processing - Stage 01 Mindee V2 Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000001",
+      "name": "Run Mindee Test",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/mindee/client-lib-test-data/main/v2/products/financial_document/default_sample.jpg",
+        "options": {
+          "response": {
+            "responseFormat": "file"
+          }
+        }
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000002",
+      "name": "Download Official Sample Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        360
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-v2.mindee.net/v2/products/extraction/enqueue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model_id",
+              "value": "REPLACE_WITH_MINDEE_MODEL_ID"
+            },
+            {
+              "name": "raw_text",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000003",
+      "name": "Mindee V2 - Enqueue Extraction",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        360
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000004",
+      "name": "Wait Before Status Check",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        940,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Mindee V2 - Enqueue Extraction').first().json.job.polling_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000005",
+      "name": "Mindee V2 - Get Job Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1180,
+        360
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst job = response.job ?? response;\nreturn [{ json: { job, poll_attempt: $runIndex + 1 } }];"
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000006",
+      "name": "Normalize Job Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.job.status }}",
+                    "rightValue": "Processed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Processed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.job.status }}",
+                    "rightValue": "Failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Failed"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000007",
+      "name": "Route Mindee Job Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1660,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.job.result_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000008",
+      "name": "Mindee V2 - Get Extraction Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1900,
+        240
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json;\nconst inference = payload.inference ?? payload;\nreturn [{ json: { test_status: 'RESULT_RECEIVED', inference, received_at: new Date().toISOString() } }];"
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000009",
+      "name": "Display Extraction Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2140,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "Mindee reported a failed inference. Inspect the previous node output and Mindee job error details."
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000010",
+      "name": "Stop - Mindee Processing Failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## TYKAIRO AI — AI Invoice Processing\n\n### How it works\nThis starter workflow validates the Mindee V2 connection before the Gmail intake, invoice normalization, duplicate checks, approval, and Google Sheets stages are added. Run it manually to download Mindee's public sample document, submit it to your configured extraction model, poll the asynchronous job until it reaches a terminal state, and retrieve the extraction result. This is a connectivity and response-shape test only; it does not yet process customer invoices or write business records.\n\n### Setup\nCreate an n8n Header Auth credential for Mindee V2 with header name `Authorization` and your Mindee V2 API key as the value. Attach it to all three Mindee HTTP Request nodes. Replace `REPLACE_WITH_MINDEE_MODEL_ID` in the enqueue node with an extraction model ID from your Mindee account. Confirm the selected model accepts the sample document format. Never paste API keys into node parameters or this note.\n\n### Customization\nAfter this test passes, replace the public sample download with the binary attachment from Gmail. Keep the asynchronous enqueue → job polling → result retrieval pattern. The legacy Mindee community node targets API V1 and is intentionally not used here.",
+        "height": 390,
+        "width": 620,
+        "color": 5
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000011",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Mindee V2 API\n\nThe API is asynchronous. This section submits a binary document, checks the job status, then fetches the result URL only after processing completes.",
+        "height": 180,
+        "width": 420,
+        "color": 7
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000012",
+      "name": "Mindee Processing Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        40
+      ]
+    }
+  ],
+  "connections": {
+    "Run Mindee Test": {
+      "main": [
+        [
+          {
+            "node": "Download Official Sample Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Official Sample Document": {
+      "main": [
+        [
+          {
+            "node": "Mindee V2 - Enqueue Extraction",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Mindee V2 - Enqueue Extraction": {
+      "main": [
+        [
+          {
+            "node": "Wait Before Status Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Wait Before Status Check": {
+      "main": [
+        [
+          {
+            "node": "Mindee V2 - Get Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mindee V2 - Get Job Status": {
+      "main": [
+        [
+          {
+            "node": "Normalize Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Normalize Job Status": {
+      "main": [
+        [
+          {
+            "node": "Route Mindee Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Mindee Job Status": {
+      "main": [
+        [
+          {
+            "node": "Mindee V2 - Get Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop - Mindee Processing Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Before Status Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mindee V2 - Get Extraction Result": {
+      "main": [
+        [
+          {
+            "node": "Display Extraction Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
