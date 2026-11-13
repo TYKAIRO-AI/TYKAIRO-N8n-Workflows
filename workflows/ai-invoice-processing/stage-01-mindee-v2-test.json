@@ -51,8 +51,8 @@
               "value": "REPLACE_WITH_MINDEE_MODEL_ID"
             },
             {
-              "name": "raw_text",
-              "value": "true"
+              "name": "rag",
+              "value": "false"
             }
           ]
         },
@@ -105,7 +105,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $json;\nconst job = response.job ?? response;\nreturn [{ json: { job, poll_attempt: $runIndex + 1 } }];"
+        "jsCode": "const response = $json;\nconst job = response.job ?? response;\nconst poll_attempt = $runIndex + 1;\nif (poll_attempt >= 20 && [\"Waiting\", \"Processing\"].includes(job.status)) {\n  job.status = \"TimedOut\";\n}\nreturn [{ json: { job, poll_attempt } }];"
       },
       "id": "0f9a8c01-8a2d-4e1f-9a01-000000000006",
       "name": "Normalize Job Status",
@@ -131,7 +131,7 @@
                 "conditions": [
                   {
                     "leftValue": "={{ $json.job.status }}",
-                    "rightValue": "Processed",
+                    "rightValue": "Success",
                     "operator": {
                       "type": "string",
                       "operation": "equals"
@@ -141,7 +141,7 @@
                 "combinator": "and"
               },
               "renameOutput": true,
-              "outputKey": "Processed"
+              "outputKey": "Success"
             },
             {
               "conditions": {
@@ -165,6 +165,29 @@
               },
               "renameOutput": true,
               "outputKey": "Failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.job.status }}",
+                    "rightValue": "TimedOut",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TimedOut"
             }
           ]
         },
@@ -257,6 +280,32 @@
         680,
         40
       ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "Mindee job did not finish within 20 polling attempts. Check the Mindee job and retry with a new execution."
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000013",
+      "name": "Stop - Mindee Polling Timeout",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "An upstream download or Mindee HTTP request failed. Inspect the failed node output and execution details."
+      },
+      "id": "0f9a8c01-8a2d-4e1f-9a01-000000000014",
+      "name": "Stop - HTTP Request Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        650
+      ]
     }
   ],
   "connections": {
@@ -280,7 +329,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Stop - HTTP Request Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Mindee V2 - Enqueue Extraction": {
@@ -292,7 +347,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Stop - HTTP Request Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Wait Before Status Check": {
@@ -315,7 +376,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Stop - HTTP Request Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Normalize Job Status": {
@@ -347,6 +414,13 @@
         ],
         [
           {
+            "node": "Stop - Mindee Polling Timeout",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Wait Before Status Check",
             "type": "main",
             "index": 0
@@ -363,7 +437,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "Stop - HTTP Request Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
